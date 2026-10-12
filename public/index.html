@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6efe9">
+<title>皮肤专家</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+  :root {
+    --bg: #f6efe9; --card: #ffffff; --text: #2b2420; --muted: #8a7d74;
+    --accent: #d9776a; --accent-soft: #fbe6e1; --ok: #4f9a74; --warn: #d79a2b; --bad: #c9503f;
+    --border: #eadfd7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1d1916; --card: #2a2420; --text: #f1e8e2; --muted: #a99b91;
+      --accent: #e8897c; --accent-soft: #3d2c28; --border: #3b322c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px calc(32px + env(safe-area-inset-bottom)); }
+  h1 { font-size: 26px; margin: 8px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    padding: 15px; border: 0; border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-ghost { background: var(--accent-soft); color: var(--accent); margin-top: 10px; }
+  .btn:disabled { opacity: .5; }
+  input[type=file] { display: none; }
+  .tips { margin: 14px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+  #preview { width: 100%; border-radius: 14px; display: none; margin-bottom: 12px; max-height: 420px; object-fit: cover; }
+  .loading { display: none; text-align: center; padding: 24px 0; color: var(--muted); }
+  .spinner { width: 34px; height: 34px; margin: 0 auto 10px; border: 3px solid var(--accent-soft);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { color: var(--bad); }
+  .score { display: flex; align-items: center; gap: 16px; }
+  .ring { --p: 0; width: 84px; height: 84px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--accent-soft) 0); }
+  .ring span { width: 66px; height: 66px; border-radius: 50%; background: var(--card); display: grid; place-items: center;
+    font-size: 24px; font-weight: 700; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 99px; background: var(--accent-soft); color: var(--accent);
+    font-size: 14px; font-weight: 600; }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  .issue { border-top: 1px solid var(--border); padding: 12px 0; }
+  .issue:first-of-type { border-top: 0; padding-top: 0; }
+  .issue-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; }
+  .sev { font-size: 13px; padding: 1px 8px; border-radius: 99px; color: #fff; flex: none; }
+  .sev-轻微 { background: var(--ok); } .sev-中等 { background: var(--warn); } .sev-明显 { background: var(--bad); }
+  .muted { color: var(--muted); font-size: 14px; }
+  .advice { margin: 4px 0 0; font-size: 15px; }
+  ul.list { margin: 0; padding-left: 20px; }
+  .routine h3 { font-size: 15px; margin: 10px 0 4px; color: var(--muted); }
+  .doctor { border-color: var(--bad); }
+  .disclaimer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 18px; }
+  #result { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>皮肤专家</h1>
+  <p class="sub">拍一张照片，AI 帮你看看皮肤状态</p>
+
+  <section class="card" id="capture">
+    <img id="preview" alt="待分析的照片">
+    <label class="btn btn-primary" id="shootBtn">
+      📷 拍照分析
+      <input type="file" id="cameraInput" accept="image/*" capture="user">
+    </label>
+    <label class="btn btn-ghost" id="pickBtn">
+      从相册选择
+      <input type="file" id="albumInput" accept="image/*">
+    </label>
+    <ul class="tips">
+      <li>素颜、在自然光下拍摄效果最好</li>
+      <li>镜头离脸约 30 厘米，保持对焦清晰</li>
+      <li>避免美颜、滤镜和强烈的阴影</li>
+    </ul>
+    <div class="loading" id="loading"><div class="spinner"></div>正在分析，请稍候…</div>
+    <p class="error" id="error"></p>
+  </section>
+
+  <section id="result"></section>
+
+  <p class="disclaimer">分析结果仅供护肤参考，不构成医疗诊断。如有持续或严重的皮肤问题，请咨询皮肤科医生。</p>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const MAX_SIDE = 1568;
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// 手机原图往往有好几 MB，先在本地压缩再上传
+async function toJpegDataUrl(file) {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.88);
+}
+
+function setBusy(busy) {
+  $("loading").style.display = busy ? "block" : "none";
+  for (const id of ["shootBtn", "pickBtn"]) $(id).style.pointerEvents = busy ? "none" : "";
+  for (const id of ["shootBtn", "pickBtn"]) $(id).style.opacity = busy ? ".5" : "";
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  $("error").textContent = "";
+  $("result").style.display = "none";
+  setBusy(true);
+  try {
+    const image = await toJpegDataUrl(file);
+    $("preview").src = image;
+    $("preview").style.display = "block";
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "分析失败");
+    render(data.result);
+  } catch (e) {
+    $("error").textContent = e.message || "分析失败，请重试";
+  } finally {
+    setBusy(false);
+  }
+}
+
+function list(items) {
+  return items?.length ? `<ul class="list">${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : `<p class="muted">暂无</p>`;
+}
+
+function render(r) {
+  const el = $("result");
+  if (!r.image_ok) {
+    el.innerHTML = `<div class="card"><h2>需要重新拍一张</h2><p>${esc(r.image_feedback)}</p></div>`;
+    el.style.display = "block";
+    return;
+  }
+  const score = Math.max(0, Math.min(100, Number(r.overall_score) || 0));
+  el.innerHTML = `
+    ${r.see_doctor?.recommended ? `<div class="card doctor"><h2>⚠️ 建议就医</h2><p>${esc(r.see_doctor.reason)}</p></div>` : ""}
+    <div class="card">
+      <div class="score">
+        <div class="ring" style="--p:${score}"><span>${score}</span></div>
+        <div>
+          <span class="tag">${esc(r.skin_type)}</span>
+          <p style="margin:6px 0 0">${esc(r.summary)}</p>
+        </div>
+      </div>
+      <p class="muted" style="margin:12px 0 0">${esc(r.skin_type_reason)}</p>
+    </div>
+    <div class="card">
+      <h2>发现的问题</h2>
+      ${r.issues?.length ? r.issues.map((i) => `
+        <div class="issue">
+          <div class="issue-head"><span>${esc(i.name)}</span><span class="sev sev-${esc(i.severity)}">${esc(i.severity)}</span></div>
+          <div class="muted">${esc(i.area)} · ${esc(i.description)}</div>
+          <p class="advice">💡 ${esc(i.advice)}</p>
+        </div>`).join("") : `<p class="muted">没有发现明显问题，继续保持！</p>`}
+    </div>
+    <div class="card routine">
+      <h2>养护方案</h2>
+      <h3>☀️ 早间</h3>${list(r.routine?.morning)}
+      <h3>🌙 晚间</h3>${list(r.routine?.evening)}
+      <h3>📅 每周</h3>${list(r.routine?.weekly)}
+    </div>
+    <div class="card"><h2>生活习惯</h2>${list(r.lifestyle_tips)}</div>`;
+  el.style.display = "block";
+  el.scrollIntoView({ behavior: "smooth" });
+}
+
+for (const id of ["cameraInput", "albumInput"]) {
+  $(id).addEventListener("change", (e) => {
+    handleFile(e.target.files[0]);
+    e.target.value = "";
+  });
+}
+</script>
+</body>
+</html>

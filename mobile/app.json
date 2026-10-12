@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "皮肤专家",
+    "slug": "skin-expert",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.skinexpert.app"
+    },
+    "android": {
+      "package": "com.skinexpert.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F6EFE9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "皮肤专家需要使用相机拍摄皮肤照片，用于分析皮肤状态。",
+          "photosPermission": "皮肤专家需要访问相册，以便选择皮肤照片进行分析。"
+        }
+      ]
+    ]
+  }
+}

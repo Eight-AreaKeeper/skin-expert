@@ -1,0 +1,16 @@
+{
+  "name": "skin-expert",
+  "version": "0.1.0",
+  "private": true,
+  "description": "拍照即可获得 AI 皮肤状态分析与养护建议",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "demo": "MOCK=1 node server.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0"
+  }
+}
